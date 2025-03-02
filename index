@@ -48,15 +48,15 @@
         </div>
         <div class="time" id="timer">03:00:00</div>
         <div class="controls">
-            <button onclick="togglePause()">⏸️</button>
-            <button onclick="resetTimer()">🔄</button>
-            <button id="resumeBtn" style="display:none;" onclick="resumeTimer()">▶</button>
+            <button id="startBtn" onclick="startTimer()">▶ Start</button>
+            <button id="pauseBtn" onclick="togglePause()" style="display:none;">⏸️ Pause</button>
+            <button onclick="resetTimer()">🔄 Reset</button>
         </div>
     </div>
     <script>
         let timeLeft = 3 * 3600;
         let timerInterval;
-        let isPaused = false;
+        let isPaused = true;
 
         function updateTimerDisplay() {
             let hours = Math.floor(timeLeft / 3600);
@@ -69,16 +69,14 @@
         }
 
         function startTimer() {
+            document.getElementById("startBtn").style.display = "none";
+            document.getElementById("pauseBtn").style.display = "inline";
+            isPaused = false;
             timerInterval = setInterval(() => {
                 if (!isPaused) {
                     if (timeLeft > 0) {
                         timeLeft--;
                         updateTimerDisplay();
-                        if (timeLeft % 3600 === 0 && timeLeft > 0) {
-                            clearInterval(timerInterval);
-                            isPaused = true;
-                            document.getElementById("resumeBtn").style.display = "inline";
-                        }
                     } else {
                         clearInterval(timerInterval);
                     }
@@ -88,23 +86,19 @@
 
         function togglePause() {
             isPaused = !isPaused;
+            document.getElementById("pauseBtn").textContent = isPaused ? "▶ Resume" : "⏸️ Pause";
         }
 
         function resetTimer() {
             clearInterval(timerInterval);
             timeLeft = 3 * 3600;
             updateTimerDisplay();
-            startTimer();
-        }
-
-        function resumeTimer() {
-            isPaused = false;
-            document.getElementById("resumeBtn").style.display = "none";
-            startTimer();
+            document.getElementById("startBtn").style.display = "inline";
+            document.getElementById("pauseBtn").style.display = "none";
+            isPaused = true;
         }
 
         updateTimerDisplay();
-        startTimer();
     </script>
 </body>
 </html>

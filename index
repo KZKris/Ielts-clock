@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .clock {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px white;
+        }
+        .time {
+            font-size: 50px;
+        }
+        .labels span {
+            font-size: 20px;
+            padding: 5px 10px;
+            opacity: 1;
+            transition: opacity 0.5s;
+        }
+        .hidden {
+            opacity: 0.3;
+        }
+        .controls button {
+            margin: 5px;
+            font-size: 16px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock">
+        <div class="labels">
+            <span id="reading">Reading</span>
+            <span id="listening">Listening</span>
+            <span id="writing">Writing</span>
+        </div>
+        <div class="time" id="timer">03:00:00</div>
+        <div class="controls">
+            <button onclick="togglePause()">⏸️</button>
+            <button onclick="resetTimer()">🔄</button>
+            <button id="resumeBtn" style="display:none;" onclick="resumeTimer()">▶</button>
+        </div>
+    </div>
+    <script>
+        let timeLeft = 3 * 3600;
+        let timerInterval;
+        let isPaused = false;
+
+        function updateTimerDisplay() {
+            let hours = Math.floor(timeLeft / 3600);
+            let minutes = Math.floor((timeLeft % 3600) / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById("timer").textContent = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+            document.getElementById("reading").classList.toggle("hidden", hours < 3);
+            document.getElementById("listening").classList.toggle("hidden", hours < 2);
+            document.getElementById("writing").classList.toggle("hidden", hours < 1);
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                        if (timeLeft % 3600 === 0 && timeLeft > 0) {
+                            clearInterval(timerInterval);
+                            isPaused = true;
+                            document.getElementById("resumeBtn").style.display = "inline";
+                        }
+                    } else {
+                        clearInterval(timerInterval);
+                    }
+                }
+            }, 1000);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 3 * 3600;
+            updateTimerDisplay();
+            startTimer();
+        }
+
+        function resumeTimer() {
+            isPaused = false;
+            document.getElementById("resumeBtn").style.display = "none";
+            startTimer();
+        }
+
+        updateTimerDisplay();
+        startTimer();
+    </script>
+</body>
+</html>

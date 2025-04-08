@@ -102,6 +102,7 @@
 
   <div class="controls">
     <button id="stopBtn">⏸️ Dừng</button>
+    <button id="stopBtn">⏸️ Dừng</button>
     <button id="submitBtn" style="display:none;">📤 Nộp đề</button>
   </div>
 
@@ -130,6 +131,15 @@
       if (timer) clearInterval(timer);
       timer = null;
     };
+// Thêm vào phần script JavaScript (sau đoạn khai báo biến)
+const startBtn = document.getElementById('startBtn');
+
+// Nút bắt đầu lại
+startBtn.onclick = () => {
+  if (!timer && selected && timeLeft > 0) {
+    startTimer();
+  }
+};
 
     submitBtn.onclick = () => {
       if (selected) {

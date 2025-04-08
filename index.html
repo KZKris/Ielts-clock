@@ -1,104 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Countdown Timer</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-        .clock {
-            text-align: center;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px white;
-        }
-        .time {
-            font-size: 50px;
-        }
-        .labels span {
-            font-size: 20px;
-            padding: 5px 10px;
-            opacity: 1;
-            transition: opacity 0.5s;
-        }
-        .hidden {
-            opacity: 0.3;
-        }
-        .controls button {
-            margin: 5px;
-            font-size: 16px;
-            padding: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Đồng hồ làm đề</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .questions {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 10px;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    .questions button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .questions button:hover:not(:disabled) {
+      background-color: #555;
+    }
+
+    .done {
+      background-color: #777 !important;
+      cursor: not-allowed;
+    }
+
+    .active {
+      background-color: #4CAF50 !important;
+    }
+
+    #timer {
+      font-size: 36px;
+      margin-top: 20px;
+      font-weight: bold;
+      color: #00e676;
+    }
+
+    #timer.warning {
+      color: #ff9800;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .controls {
+      margin: 20px;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      background-color: #2196f3;
+      color: white;
+      cursor: pointer;
+    }
+
+    .restore {
+      margin-top: 20px;
+    }
+
+    .restore input {
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+    }
+
+    .restore button {
+      padding: 10px 15px;
+      margin-left: 5px;
+      font-size: 16px;
+      background-color: #9c27b0;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-    <div class="clock">
-        <div class="labels">
-            <span id="reading">Reading</span>
-            <span id="listening">Listening</span>
-            <span id="writing">Writing</span>
-        </div>
-        <div class="time" id="timer">03:00:00</div>
-        <div class="controls">
-            <button id="startBtn" onclick="startTimer()">▶ Start</button>
-            <button id="pauseBtn" onclick="togglePause()" style="display:none;">⏸️ Pause</button>
-            <button onclick="resetTimer()">🔄 Reset</button>
-        </div>
-    </div>
-    <script>
-        let timeLeft = 3 * 3600;
-        let timerInterval;
-        let isPaused = true;
+  <h1>🕒 Đồng hồ làm đề - Giao diện tối</h1>
+  <div id="timer">00:00</div>
 
-        function updateTimerDisplay() {
-            let hours = Math.floor(timeLeft / 3600);
-            let minutes = Math.floor((timeLeft % 3600) / 60);
-            let seconds = timeLeft % 60;
-            document.getElementById("timer").textContent = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-            document.getElementById("reading").classList.toggle("hidden", hours < 3);
-            document.getElementById("listening").classList.toggle("hidden", hours < 2);
-            document.getElementById("writing").classList.toggle("hidden", hours < 1);
+  <div class="controls">
+    <button id="stopBtn">⏸️ Dừng</button>
+    <button id="submitBtn" style="display:none;">📤 Nộp đề</button>
+  </div>
+
+  <div class="questions" id="questionList"></div>
+
+  <div class="restore">
+    <input type="text" id="codeInput" placeholder="Nhập mã reset (vd: reset25)" />
+    <button onclick="handleResetCode()">Khôi phục</button>
+  </div>
+
+  <script>
+    const TOTAL_TIME = 50 * 60;
+    let selected = null;
+    let timer = null;
+    let timeLeft = TOTAL_TIME;
+    let completed = JSON.parse(localStorage.getItem('completed') || '[]');
+    let saved = JSON.parse(localStorage.getItem('current') || '{}');
+    let warned = false;
+
+    const timerEl = document.getElementById('timer');
+    const questionList = document.getElementById('questionList');
+    const stopBtn = document.getElementById('stopBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    stopBtn.onclick = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+    };
+
+    submitBtn.onclick = () => {
+      if (selected) {
+        clearInterval(timer);
+        let usedTime = TOTAL_TIME - timeLeft;
+        let usedMin = Math.floor(usedTime / 60);
+        let remainMin = Math.floor(timeLeft / 60);
+
+        alert(`✅ Bạn đã nộp đề ${selected}.\n⏱ Thời gian đã dùng: ${usedMin} phút.\n🕒 Còn lại: ${remainMin} phút.`);
+
+        completeCurrent();
+      }
+    };
+
+    function renderQuestions() {
+      questionList.innerHTML = '';
+      for (let i = 1; i <= 50; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.disabled = completed.includes(i);
+        btn.className = completed.includes(i) ? 'done' : '';
+        if (selected === i) btn.classList.add('active');
+        btn.onclick = () => selectQuestion(i);
+        questionList.appendChild(btn);
+      }
+    }
+
+    function selectQuestion(i) {
+      if (completed.includes(i)) return;
+
+      if (selected !== i) {
+        selected = i;
+        if (saved.id === i && saved.timeLeft > 0) {
+          timeLeft = saved.timeLeft;
+        } else {
+          timeLeft = TOTAL_TIME;
+        }
+      }
+
+      warned = false;
+      clearInterval(timer);
+      startTimer();
+      renderQuestions();
+      submitBtn.style.display = 'inline-block';
+    }
+
+    function startTimer() {
+      updateTimerDisplay();
+      timer = setInterval(() => {
+        timeLeft--;
+
+        if (!warned && timeLeft <= 5 * 60) {
+          warned = true;
+          timerEl.classList.add('warning');
+          alert('⏰ Còn 5 phút!');
         }
 
-        function startTimer() {
-            document.getElementById("startBtn").style.display = "none";
-            document.getElementById("pauseBtn").style.display = "inline";
-            isPaused = false;
-            timerInterval = setInterval(() => {
-                if (!isPaused) {
-                    if (timeLeft > 0) {
-                        timeLeft--;
-                        updateTimerDisplay();
-                    } else {
-                        clearInterval(timerInterval);
-                    }
-                }
-            }, 1000);
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById("pauseBtn").textContent = isPaused ? "▶ Resume" : "⏸️ Pause";
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            timeLeft = 3 * 3600;
-            updateTimerDisplay();
-            document.getElementById("startBtn").style.display = "inline";
-            document.getElementById("pauseBtn").style.display = "none";
-            isPaused = true;
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          completeCurrent();
         }
 
         updateTimerDisplay();
-    </script>
+        saveProgress();
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const min = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const sec = String(timeLeft % 60).padStart(2, '0');
+      timerEl.textContent = `${min}:${sec}`;
+    }
+
+    function completeCurrent() {
+      clearInterval(timer);
+      timer = null;
+      timerEl.classList.remove('warning');
+      if (selected && !completed.includes(selected)) {
+        completed.push(selected);
+        localStorage.setItem('completed', JSON.stringify(completed));
+      }
+      selected = null;
+      localStorage.removeItem('current');
+      submitBtn.style.display = 'none';
+      renderQuestions();
+      updateTimerDisplay();
+    }
+
+    function saveProgress() {
+      if (selected) {
+        localStorage.setItem('current', JSON.stringify({ id: selected, timeLeft }));
+      }
+    }
+
+    function handleResetCode() {
+      const code = document.getElementById('codeInput').value.trim().toLowerCase();
+      if (code.startsWith('reset')) {
+        const num = parseInt(code.slice(5));
+        if (num >= 1 && num <= 50) {
+          completed = completed.filter((x) => x !== num);
+          localStorage.setItem('completed', JSON.stringify(completed));
+
+          clearInterval(timer);
+          selected = num;
+          timeLeft = TOTAL_TIME;
+          warned = false;
+          startTimer();
+          renderQuestions();
+          saveProgress();
+          submitBtn.style.display = 'inline-block';
+          document.getElementById('codeInput').value = '';
+        } else {
+          alert('❌ Số đề không hợp lệ! (1 - 50)');
+        }
+      } else {
+        alert('❌ Mã không hợp lệ. Vui lòng nhập dạng "reset25"');
+      }
+    }
+
+    if (saved.id && !completed.includes(saved.id)) {
+      selected = saved.id;
+      timeLeft = saved.timeLeft;
+      startTimer();
+      submitBtn.style.display = 'inline-block';
+    }
+
+    renderQuestions();
+    updateTimerDisplay();
+  </script>
 </body>
 </html>

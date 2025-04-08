@@ -226,29 +226,33 @@
     }
 
     function handleResetCode() {
-      const code = document.getElementById('codeInput').value.trim().toLowerCase();
-      if (code.startsWith('reset')) {
-        const num = parseInt(code.slice(5));
-        if (num >= 1 && num <= 50) {
-          completed = completed.filter((x) => x !== num);
-          localStorage.setItem('completed', JSON.stringify(completed));
+  const code = document.getElementById('codeInput').value.trim().toLowerCase();
+  if (code.startsWith('reset')) {
+    const num = parseInt(code.slice(5));
+    if (num >= 1 && num <= 50) {
+      completed = completed.filter((x) => x !== num);
+      localStorage.setItem('completed', JSON.stringify(completed));
 
-          clearInterval(timer);
-          selected = num;
-          timeLeft = TOTAL_TIME;
-          warned = false;
-          startTimer();
-          renderQuestions();
-          saveProgress();
-          submitBtn.style.display = 'inline-block';
-          document.getElementById('codeInput').value = '';
-        } else {
-          alert('❌ Số đề không hợp lệ! (1 - 50)');
-        }
-      } else {
-        alert('❌ Mã không hợp lệ. Vui lòng nhập dạng "reset25"');
-      }
+      clearInterval(timer);
+      timer = null;
+      selected = num;
+      timeLeft = TOTAL_TIME;
+      warned = false;
+
+      renderQuestions();
+      updateTimerDisplay();
+      localStorage.setItem('current', JSON.stringify({ id: selected, timeLeft }));
+
+      submitBtn.style.display = 'inline-block';
+      alert(`✅ Đề ${num} đã được reset.\n▶️ Nhấn "Bắt đầu" để làm lại.`);
+      document.getElementById('codeInput').value = '';
+    } else {
+      alert('❌ Số đề không hợp lệ! (1 - 50)');
     }
+  } else {
+    alert('❌ Mã không hợp lệ. Vui lòng nhập dạng "reset25"');
+  }
+}
 
     if (saved.id && !completed.includes(saved.id)) {
       selected = saved.id;
